@@ -270,7 +270,7 @@ function buildPrompt(input: {
 
 async function requestOpenRouter(prompt: string) {
   const apiKey = requiredEnv("OPENROUTER_API_KEY");
-  const model = process.env.OPENROUTER_MODEL || "openrouter/free";
+  const model = process.env.OPENROUTER_MODEL || "deepseek/deepseek-v4-flash";
 
   const response = await fetch(OPENROUTER_URL, {
     method: "POST",

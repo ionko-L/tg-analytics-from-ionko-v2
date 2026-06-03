@@ -20,7 +20,7 @@ Add these variables during manual Vercel deployment:
 ```bash
 APIFY_TOKEN=...
 OPENROUTER_API_KEY=...
-OPENROUTER_MODEL=openrouter/free
+OPENROUTER_MODEL=deepseek/deepseek-v4-flash
 APIFY_ACTOR_ID=viralanalyzer/telegram-channel-scraper
 ```
 
