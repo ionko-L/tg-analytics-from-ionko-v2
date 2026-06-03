@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: light;
+  --background: #f7f8f8;
+  --foreground: #111513;
+  --muted: #66716d;
+  --line: #d9dfdc;
+  --panel: #ffffff;
+  --accent: #16745b;
+  --accent-dark: #0e5a45;
+  --danger: #b3261e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--background);
+}
+
+body {
+  min-height: 100dvh;
+  margin: 0;
+  overflow-x: hidden;
+  background:
+    linear-gradient(135deg, rgba(22, 116, 91, 0.08), transparent 34rem),
+    linear-gradient(180deg, #f7f8f8 0%, #eef2f0 100%);
+  color: var(--foreground);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(22, 116, 91, 0.18);
+}
+
+main,
+section,
+article,
+form,
+div {
+  min-width: 0;
+}
+
+h1,
+h2,
+h3,
+p,
+li,
+a,
+span {
+  overflow-wrap: anywhere;
+}
