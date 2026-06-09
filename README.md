@@ -28,5 +28,5 @@ APIFY_ACTOR_ID=viralanalyzer/telegram-channel-scraper
 
 - No database or background queue is used.
 - One user request maps to one Next.js route handler call.
-- The Apify actor is limited to 10 posts per analysis to keep local and Vercel Hobby runs lightweight.
+- The service fetches up to 100 recent posts, analyzes posts from the last 30 days, and falls back to the latest 10 posts when the 30-day period has fewer than 10 posts.
 - If reactions or subscriber counts are absent in Apify data, the UI reports them as unavailable.

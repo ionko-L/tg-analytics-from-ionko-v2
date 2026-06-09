@@ -23,7 +23,9 @@ type ChannelSummary = {
   subscribers: number | null;
 };
 
-const POSTS_LIMIT = 10;
+const LOOKBACK_DAYS = 30;
+const MIN_POSTS_FOR_ANALYSIS = 10;
+const APIFY_FETCH_LIMIT = 100;
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 function jsonError(status: number, error: string, details?: string) {
@@ -168,8 +170,38 @@ function extractPosts(items: unknown[], channelUrl: string) {
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
-    })
-    .slice(0, POSTS_LIMIT);
+    });
+}
+
+function getPostTimestamp(post: NormalizedPost) {
+  if (!post.date) return null;
+  const timestamp = Date.parse(post.date);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function selectPostsForAnalysis(posts: NormalizedPost[]) {
+  const sortedPosts = [...posts].sort((a, b) => {
+    const aTimestamp = getPostTimestamp(a) ?? 0;
+    const bTimestamp = getPostTimestamp(b) ?? 0;
+    return bTimestamp - aTimestamp;
+  });
+  const cutoff = Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
+  const postsInPeriod = sortedPosts.filter((post) => {
+    const timestamp = getPostTimestamp(post);
+    return timestamp != null && timestamp >= cutoff;
+  });
+
+  if (postsInPeriod.length >= MIN_POSTS_FOR_ANALYSIS) {
+    return {
+      posts: postsInPeriod,
+      mode: `Последние ${LOOKBACK_DAYS} дней`,
+    };
+  }
+
+  return {
+    posts: sortedPosts.slice(0, MIN_POSTS_FOR_ANALYSIS),
+    mode: `Последние ${MIN_POSTS_FOR_ANALYSIS} постов, потому что за ${LOOKBACK_DAYS} дней найдено меньше ${MIN_POSTS_FOR_ANALYSIS}`,
+  };
 }
 
 function extractChannel(items: unknown[], fallback: ReturnType<typeof normalizeTelegramInput>): ChannelSummary {
@@ -236,7 +268,7 @@ async function fetchApifyItems(channel: ReturnType<typeof normalizeTelegramInput
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       channels: [channel.url],
-      maxPostsPerChannel: POSTS_LIMIT,
+      maxPostsPerChannel: APIFY_FETCH_LIMIT,
     }),
   });
 
@@ -254,6 +286,7 @@ async function fetchApifyItems(channel: ReturnType<typeof normalizeTelegramInput
 
 function buildPrompt(input: {
   channel: ChannelSummary;
+  analysisMode: string;
   metrics: ReturnType<typeof calculateMetrics>;
   recentPosts: NormalizedPost[];
   topPosts: NormalizedPost[];
@@ -261,6 +294,7 @@ function buildPrompt(input: {
   return [
     "Ты аналитик Telegram-каналов. Ответь на русском языке, кратко и практически.",
     "Сделай структурированное резюме по данным. Не выдумывай недостающие метрики.",
+    "Учитывай, что набор данных выбран по правилу analysisMode.",
     "Обязательно включи: о чем канал, тон и вероятную аудиторию, активность, вовлеченность, сильные стороны, риски или ограничения данных.",
     "Если реакций нет в данных, прямо скажи только то, что реакции недоступны. Не утверждай, что лайков, комментариев или репостов нет.",
     "",
@@ -321,7 +355,9 @@ export async function POST(request: NextRequest) {
     const channel = normalizeTelegramInput(body?.channel);
     const items = await fetchApifyItems(channel);
     const channelSummary = extractChannel(items, channel);
-    const recentPosts = extractPosts(items, channel.url);
+    const allPosts = extractPosts(items, channel.url);
+    const selectedPosts = selectPostsForAnalysis(allPosts);
+    const recentPosts = selectedPosts.posts;
 
     if (recentPosts.length === 0) {
       return jsonError(
@@ -344,6 +380,7 @@ export async function POST(request: NextRequest) {
     const analysis = await requestOpenRouter(
       buildPrompt({
         channel: channelSummary,
+        analysisMode: selectedPosts.mode,
         metrics,
         recentPosts,
         topPosts,
@@ -352,6 +389,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       channel: channelSummary,
+      analysisMode: selectedPosts.mode,
       metrics,
       topPosts,
       recentPosts,

@@ -29,6 +29,7 @@ type ApiResult = {
     description: string | null;
     subscribers: number | null;
   };
+  analysisMode: string;
   metrics: {
     postCount: number;
     averageViews: number | null;
@@ -174,6 +175,7 @@ function ResultView({ result }: { result: ApiResult }) {
           <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">
             {result.channel.title || `@${result.channel.handle}`}
           </h2>
+          <p className="mt-2 text-sm font-medium text-zinc-500">{result.analysisMode}</p>
           <div className="mt-5 whitespace-pre-wrap text-base leading-7 text-zinc-700">{result.analysis}</div>
           {result.limitations.length > 0 ? (
             <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
