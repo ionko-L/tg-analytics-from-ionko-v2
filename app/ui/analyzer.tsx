@@ -101,17 +101,24 @@ function LoadingState() {
 
 function EmptyState() {
   return (
-    <section className="min-w-0 overflow-hidden border border-dashed border-[var(--hairline)] bg-[var(--surface-soft)] p-8">
-      <div className="max-w-2xl min-w-0">
-        <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-card)] text-white">
-          <ChartLineUp className="h-6 w-6" weight="bold" />
+    <section className="intro-panel min-w-0 p-5 sm:p-6">
+      <div className="max-w-2xl">
+        <div>
+          <h2 className="break-words text-lg font-light uppercase tracking-[0.12em] text-white sm:text-xl">
+            Введите публичный Telegram-канал
+          </h2>
+          <div className="mt-3 max-w-[58ch] text-sm font-light leading-6 text-[var(--body)] sm:text-base sm:leading-7">
+            <p>Вы получите анализ последних 30 дней этого канала:</p>
+            <ul className="mt-3 space-y-1">
+              {["темы", "активность", "просмотры", "краткое резюме"].map((item, index) => (
+                <li key={item} className="flex items-center gap-3 leading-6">
+                  <span className="twinkle-star" style={{ animationDelay: `${index * 0.28}s` }} />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-        <h2 className="break-words text-2xl font-bold uppercase tracking-normal text-white">
-          Введите публичный Telegram-канал
-        </h2>
-        <p className="mt-3 max-w-[62ch] text-base font-light leading-7 text-[var(--body)]">
-          Сервис возьмет последние публикации через Apify, посчитает базовые метрики и вернет короткую интерпретацию через OpenRouter.
-        </p>
       </div>
     </section>
   );
@@ -243,7 +250,7 @@ function ResultView({ result }: { result: ApiResult }) {
 }
 
 export function Analyzer() {
-  const [channel, setChannel] = useState("t.me/let_me_be_your_psy");
+  const [channel, setChannel] = useState("");
   const [result, setResult] = useState<ApiResult | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -283,63 +290,51 @@ export function Analyzer() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-black px-4 py-6 text-white sm:px-6 lg:px-8">
+    <main className="bmw-ambient min-h-[100dvh] px-4 py-6 text-white sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-[1400px] min-w-0 overflow-hidden">
         <nav className="mb-8 flex min-h-16 w-full items-center justify-between border-b border-[var(--hairline)] pb-4">
           <div className="flex items-center gap-4">
             <div className="m-stripe h-10 w-3" />
             <div>
-              <p className="font-mono text-xs font-bold uppercase tracking-[0.24em] text-[var(--muted)]">Version 02</p>
               <p className="text-sm font-bold uppercase tracking-[0.18em] text-white">TG Analytics</p>
             </div>
           </div>
-          <p className="hidden text-sm font-bold uppercase tracking-[0.15em] text-[var(--body)] sm:block">
-            Apify / OpenRouter
-          </p>
         </nav>
 
-        <header className="grid w-full grid-cols-1 gap-8 border-b border-[var(--hairline)] pb-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.5fr)] lg:items-stretch">
-          <div className="w-full min-w-0">
-            <p className="mb-4 break-words font-mono text-xs font-bold uppercase tracking-[0.16em] text-[var(--body)] sm:text-sm sm:tracking-[0.24em]">
-              Telegram channel intelligence
-            </p>
-            <h1 className="max-w-full break-words text-4xl font-bold uppercase leading-none tracking-normal text-white sm:max-w-4xl sm:text-5xl md:text-7xl">
-              TG Analytics from ionko
+        <header className="grid w-full grid-cols-1 gap-6 border-b border-[var(--hairline)] pb-10 lg:max-w-4xl">
+          <div className="brand-panel w-full min-w-0 p-6 sm:p-8">
+            <h1 className="future-display max-w-full break-words text-4xl uppercase leading-none tracking-normal text-white sm:text-5xl md:text-7xl">
+              <span className="block">TG Analytics</span>
+              <span className="logo-signature-line normal-case">
+                <span className="signature-from">from</span>
+                <span className="ink-signature inline-block text-[1.1em]">Ionko</span>
+              </span>
             </h1>
-            <p className="mt-6 w-full max-w-[31ch] break-words text-base font-light leading-7 text-[var(--body-strong)] sm:max-w-[66ch] sm:text-lg sm:leading-8">
-              Техническая панель для быстрой оценки публичного Telegram-канала: период, просмотры, частота публикаций и краткое резюме на русском.
-            </p>
-            <div className="mt-8 grid w-full max-w-full border border-[var(--hairline)] md:max-w-3xl md:grid-cols-3">
-              {["30 дней", "fallback 10", "DeepSeek"].map((item) => (
-                <div key={item} className="border-b border-[var(--hairline)] p-4 md:border-b-0 md:border-r md:last:border-r-0">
-                  <p className="font-mono text-sm font-bold uppercase tracking-[0.1em] text-white sm:tracking-[0.15em]">{item}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.12em] text-[var(--muted)]">режим анализа</p>
-                </div>
-              ))}
-            </div>
           </div>
+
+          <EmptyState />
 
           <form
             onSubmit={handleSubmit}
-            className="carbon-field relative min-w-0 overflow-hidden border border-[var(--hairline)] p-6"
+            className="carbon-field animated-border relative w-full min-w-0 max-w-2xl overflow-hidden border border-white/70 p-6"
           >
-            <div className="track-line" />
             <label htmlFor="channel" className="relative block text-sm font-bold uppercase tracking-[0.15em] text-white">
               Telegram-канал
             </label>
-            <p className="relative mt-2 text-sm font-light text-[var(--body)]">URL, @username или username.</p>
             <div className="relative mt-5 grid gap-3">
-              <input
-                id="channel"
-                value={channel}
-                onChange={(event) => setChannel(event.target.value)}
-                placeholder="t.me/let_me_be_your_psy"
-                className="min-h-12 w-full min-w-0 border border-[var(--hairline)] bg-black px-4 text-base font-light text-white outline-none transition placeholder:text-[var(--muted)] focus:border-white"
-              />
+              <div className="input-shell">
+                <input
+                  id="channel"
+                  value={channel}
+                  onChange={(event) => setChannel(event.target.value)}
+                  placeholder="Введите Telegram-канал"
+                  className="min-h-12 w-full min-w-0 border border-white/80 bg-black/70 px-4 text-base font-light text-white outline-none transition placeholder:text-[var(--muted)] focus:border-white focus:bg-black"
+                />
+              </div>
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 border border-white bg-transparent px-5 text-sm font-bold uppercase tracking-[0.1em] text-white transition hover:bg-white hover:text-black active:translate-y-[1px] disabled:cursor-not-allowed disabled:border-[var(--hairline)] disabled:text-[var(--muted)] sm:tracking-[0.15em]"
+                className="m-action-button inline-flex min-h-12 w-full items-center justify-center gap-2 border px-5 text-sm font-bold uppercase tracking-[0.1em] text-white transition active:translate-y-[1px] disabled:cursor-not-allowed disabled:border-[var(--hairline)] disabled:text-[var(--muted)] sm:tracking-[0.15em]"
               >
                 {isLoading ? (
                   <ArrowClockwise className="h-5 w-5 animate-spin" weight="bold" />
@@ -350,13 +345,13 @@ export function Analyzer() {
               </button>
             </div>
           </form>
+
         </header>
 
         <div className="mt-8">
           {isLoading ? <LoadingState /> : null}
           {!isLoading && error ? <ErrorState error={error} /> : null}
           {!isLoading && !error && result ? <ResultView result={result} /> : null}
-          {!isLoading && !error && !result ? <EmptyState /> : null}
         </div>
       </div>
     </main>
