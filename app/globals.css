@@ -6,15 +6,20 @@
 }
 
 :root {
-  color-scheme: light;
-  --background: #f7f8f8;
-  --foreground: #111513;
-  --muted: #66716d;
-  --line: #d9dfdc;
-  --panel: #ffffff;
-  --accent: #16745b;
-  --accent-dark: #0e5a45;
-  --danger: #b3261e;
+  color-scheme: dark;
+  --background: #000000;
+  --foreground: #ffffff;
+  --body: #bbbbbb;
+  --body-strong: #e6e6e6;
+  --muted: #7e7e7e;
+  --hairline: #3c3c3c;
+  --surface-soft: #0d0d0d;
+  --surface-card: #1a1a1a;
+  --surface-elevated: #262626;
+  --m-blue-light: #0066b1;
+  --m-blue-dark: #1c69d4;
+  --m-red: #e22718;
+  --danger: #e22718;
 }
 
 * {
@@ -23,16 +28,17 @@
 
 html {
   min-height: 100%;
+  max-width: 100vw;
   background: var(--background);
 }
 
 body {
+  width: 100%;
   min-height: 100dvh;
+  max-width: 100vw;
   margin: 0;
   overflow-x: hidden;
-  background:
-    linear-gradient(135deg, rgba(22, 116, 91, 0.08), transparent 34rem),
-    linear-gradient(180deg, #f7f8f8 0%, #eef2f0 100%);
+  background: var(--background);
   color: var(--foreground);
 }
 
@@ -43,15 +49,25 @@ textarea {
 }
 
 ::selection {
-  background: rgba(22, 116, 91, 0.18);
+  background: rgba(28, 105, 212, 0.45);
 }
 
 main,
+header,
+nav,
 section,
 article,
 form,
-div {
+div,
+input,
+button {
   min-width: 0;
+}
+
+main {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 h1,
@@ -62,4 +78,33 @@ li,
 a,
 span {
   overflow-wrap: anywhere;
+}
+
+.m-stripe {
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--m-blue-light) 0 33.333%,
+    var(--m-blue-dark) 33.333% 66.666%,
+    var(--m-red) 66.666% 100%
+  );
+}
+
+.carbon-field {
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.12), transparent 19%),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 72% 18%, rgba(28, 105, 212, 0.28), transparent 24%),
+    radial-gradient(circle at 86% 52%, rgba(226, 39, 24, 0.18), transparent 22%),
+    #050505;
+  background-size: auto, 32px 32px, 32px 32px, auto, auto, auto;
+}
+
+.track-line {
+  position: absolute;
+  inset: auto 0 18%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  transform: skewY(-7deg);
 }

@@ -73,25 +73,25 @@ const previewText = (text: string) => {
 function LoadingState() {
   return (
     <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-      <div className="rounded-[1.75rem] border border-zinc-200/80 bg-white/72 p-6 shadow-[0_24px_80px_-48px_rgba(20,40,32,0.42)]">
-        <div className="mb-5 flex items-center gap-3 text-sm font-medium text-zinc-600">
-          <ArrowClockwise className="h-5 w-5 animate-spin text-[var(--accent)]" weight="bold" />
+      <div className="border border-[var(--hairline)] bg-[var(--surface-soft)] p-6">
+        <div className="mb-5 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.15em] text-[var(--body-strong)]">
+          <ArrowClockwise className="h-5 w-5 animate-spin text-white" weight="bold" />
           Apify собирает последние посты
         </div>
         <div className="space-y-3">
-          <div className="h-4 w-3/4 animate-pulse rounded-full bg-zinc-200" />
-          <div className="h-4 w-5/6 animate-pulse rounded-full bg-zinc-200" />
-          <div className="h-4 w-2/3 animate-pulse rounded-full bg-zinc-200" />
+          <div className="h-3 w-3/4 animate-pulse bg-[var(--surface-elevated)]" />
+          <div className="h-3 w-5/6 animate-pulse bg-[var(--surface-elevated)]" />
+          <div className="h-3 w-2/3 animate-pulse bg-[var(--surface-elevated)]" />
         </div>
       </div>
-      <div className="rounded-[1.75rem] border border-zinc-200/80 bg-white/72 p-6 shadow-[0_24px_80px_-48px_rgba(20,40,32,0.42)]">
-        <div className="mb-5 flex items-center gap-3 text-sm font-medium text-zinc-600">
-          <Lightning className="h-5 w-5 text-[var(--accent)]" weight="bold" />
+      <div className="border border-[var(--hairline)] bg-[var(--surface-soft)] p-6">
+        <div className="mb-5 flex items-center gap-3 text-sm font-bold uppercase tracking-[0.15em] text-[var(--body-strong)]">
+          <Lightning className="h-5 w-5 text-white" weight="bold" />
           OpenRouter готовит резюме
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={index} className="h-20 animate-pulse rounded-2xl bg-zinc-200/80" />
+            <div key={index} className="h-20 animate-pulse bg-[var(--surface-card)]" />
           ))}
         </div>
       </div>
@@ -101,15 +101,15 @@ function LoadingState() {
 
 function EmptyState() {
   return (
-    <section className="min-w-0 overflow-hidden rounded-[2rem] border border-dashed border-zinc-300 bg-white/54 p-8">
+    <section className="min-w-0 overflow-hidden border border-dashed border-[var(--hairline)] bg-[var(--surface-soft)] p-8">
       <div className="max-w-2xl min-w-0">
-        <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-[var(--accent)]">
+        <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface-card)] text-white">
           <ChartLineUp className="h-6 w-6" weight="bold" />
         </div>
-        <h2 className="break-words text-2xl font-semibold tracking-tight text-zinc-950">
+        <h2 className="break-words text-2xl font-bold uppercase tracking-normal text-white">
           Введите публичный Telegram-канал
         </h2>
-        <p className="mt-3 max-w-[62ch] text-base leading-7 text-zinc-600">
+        <p className="mt-3 max-w-[62ch] text-base font-light leading-7 text-[var(--body)]">
           Сервис возьмет последние публикации через Apify, посчитает базовые метрики и вернет короткую интерпретацию через OpenRouter.
         </p>
       </div>
@@ -119,13 +119,13 @@ function EmptyState() {
 
 function ErrorState({ error }: { error: ApiError }) {
   return (
-    <section className="rounded-[2rem] border border-red-200 bg-red-50 p-6 text-red-950">
+    <section className="border border-[var(--m-red)] bg-[rgba(226,39,24,0.1)] p-6 text-white">
       <div className="flex items-start gap-3">
         <WarningCircle className="mt-0.5 h-6 w-6 flex-none" weight="bold" />
         <div>
-          <h2 className="font-semibold">Не удалось выполнить анализ</h2>
-          <p className="mt-2 text-sm leading-6 text-red-800">{error.error}</p>
-          {error.details ? <p className="mt-2 text-xs leading-5 text-red-700">{error.details}</p> : null}
+          <h2 className="font-bold uppercase tracking-[0.12em]">Не удалось выполнить анализ</h2>
+          <p className="mt-2 text-sm font-light leading-6 text-[var(--body-strong)]">{error.error}</p>
+          {error.details ? <p className="mt-2 text-xs leading-5 text-[var(--body)]">{error.details}</p> : null}
         </div>
       </div>
     </section>
@@ -155,32 +155,33 @@ function ResultView({ result }: { result: ApiResult }) {
           return (
             <div
               key={metric.label}
-              className="rounded-[1.35rem] border border-zinc-200/80 bg-white/76 p-5 shadow-[0_18px_50px_-36px_rgba(20,40,32,0.45)]"
+              className="border border-[var(--hairline)] bg-[var(--surface-soft)] p-5"
             >
               <div className="mb-4 flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-zinc-500">{metric.label}</p>
-                <Icon className="h-5 w-5 text-[var(--accent)]" weight="bold" />
+                <p className="text-sm font-bold uppercase tracking-[0.15em] text-[var(--muted)]">{metric.label}</p>
+                <Icon className="h-5 w-5 text-white" weight="bold" />
               </div>
-              <p className="font-mono text-2xl font-semibold tracking-tight text-zinc-950">{metric.value}</p>
+              <p className="font-mono text-3xl font-bold tracking-normal text-white">{metric.value}</p>
             </div>
           );
         })}
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <article className="rounded-[2rem] border border-zinc-200/80 bg-white/82 p-6 shadow-[0_24px_80px_-48px_rgba(20,40,32,0.42)]">
-          <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+        <article className="border border-[var(--hairline)] bg-[var(--surface-soft)] p-6">
+          <div className="m-stripe mb-6 w-32" />
+          <p className="mb-2 text-sm font-bold uppercase tracking-[0.18em] text-[var(--body)]">
             Аналитика
           </p>
-          <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">
+          <h2 className="text-2xl font-bold uppercase tracking-normal text-white">
             {result.channel.title || `@${result.channel.handle}`}
           </h2>
-          <p className="mt-2 text-sm font-medium text-zinc-500">{result.analysisMode}</p>
-          <div className="mt-5 whitespace-pre-wrap text-base leading-7 text-zinc-700">{result.analysis}</div>
+          <p className="mt-2 text-sm font-bold uppercase tracking-[0.12em] text-[var(--muted)]">{result.analysisMode}</p>
+          <div className="mt-5 whitespace-pre-wrap text-base font-light leading-7 text-[var(--body-strong)]">{result.analysis}</div>
           {result.limitations.length > 0 ? (
-            <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-              <p className="text-sm font-semibold text-zinc-800">Ограничения данных</p>
-              <ul className="mt-2 space-y-1 text-sm leading-6 text-zinc-600">
+            <div className="mt-6 border border-[var(--hairline)] bg-black p-4">
+              <p className="text-sm font-bold uppercase tracking-[0.12em] text-white">Ограничения данных</p>
+              <ul className="mt-2 space-y-1 text-sm font-light leading-6 text-[var(--body)]">
                 {result.limitations.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
@@ -189,13 +190,13 @@ function ResultView({ result }: { result: ApiResult }) {
           ) : null}
         </article>
 
-        <article className="rounded-[2rem] border border-zinc-200/80 bg-white/82 p-6 shadow-[0_24px_80px_-48px_rgba(20,40,32,0.42)]">
+        <article className="border border-[var(--hairline)] bg-[var(--surface-soft)] p-6">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--accent)]">
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--body)]">
                 Последние посты
               </p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950">
+              <h2 className="mt-2 text-2xl font-bold uppercase tracking-normal text-white">
                 @{result.channel.handle}
               </h2>
             </div>
@@ -203,21 +204,21 @@ function ResultView({ result }: { result: ApiResult }) {
               href={result.channel.url}
               target="_blank"
               rel="noreferrer"
-              className="rounded-full border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
+              className="border border-white px-4 py-3 text-sm font-bold uppercase tracking-[0.15em] text-white transition hover:bg-white hover:text-black"
             >
               Открыть канал
             </a>
           </div>
 
-          <div className="divide-y divide-zinc-200/80">
+          <div className="divide-y divide-[var(--hairline)]">
             {result.recentPosts.slice(0, 6).map((post) => (
               <div key={post.id} className="py-4 first:pt-0 last:pb-0">
-                <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-zinc-500">
+                <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs uppercase tracking-[0.08em] text-[var(--muted)]">
                   <span>{formatDate(post.date)}</span>
                   <span>{formatNumber(post.views)} views</span>
                   <span>{post.reactions == null ? "реакции: нет данных" : `${formatNumber(post.reactions)} реакций`}</span>
                 </div>
-                <p className="text-sm leading-6 text-zinc-700">{previewText(post.text)}</p>
+                <p className="text-sm font-light leading-6 text-[var(--body)]">{previewText(post.text)}</p>
               </div>
             ))}
           </div>
@@ -225,13 +226,13 @@ function ResultView({ result }: { result: ApiResult }) {
       </section>
 
       {result.topPosts.length > 0 ? (
-        <section className="rounded-[2rem] border border-zinc-200/80 bg-white/76 p-6">
-          <h2 className="text-xl font-semibold tracking-tight text-zinc-950">Топ постов по просмотрам</h2>
+        <section className="border border-[var(--hairline)] bg-[var(--surface-soft)] p-6">
+          <h2 className="text-xl font-bold uppercase tracking-normal text-white">Топ постов по просмотрам</h2>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             {result.topPosts.map((post) => (
-              <div key={post.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="font-mono text-sm font-semibold text-zinc-950">{formatNumber(post.views)} views</p>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">{previewText(post.text)}</p>
+              <div key={post.id} className="border border-[var(--hairline)] bg-black p-4">
+                <p className="font-mono text-sm font-bold uppercase tracking-[0.08em] text-white">{formatNumber(post.views)} views</p>
+                <p className="mt-2 text-sm font-light leading-6 text-[var(--body)]">{previewText(post.text)}</p>
               </div>
             ))}
           </div>
@@ -282,41 +283,63 @@ export function Analyzer() {
   }
 
   return (
-    <main className="min-h-[100dvh] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-[1400px] min-w-0">
-        <header className="grid gap-8 border-b border-zinc-200/80 pb-8 lg:grid-cols-[minmax(0,0.86fr)_minmax(320px,0.54fr)] lg:items-end">
-          <div className="min-w-0">
-            <p className="mb-4 font-mono text-sm font-semibold uppercase tracking-[0.24em] text-[var(--accent)]">
-              Apify + OpenRouter
+    <main className="min-h-[100dvh] bg-black px-4 py-6 text-white sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1400px] min-w-0 overflow-hidden">
+        <nav className="mb-8 flex min-h-16 w-full items-center justify-between border-b border-[var(--hairline)] pb-4">
+          <div className="flex items-center gap-4">
+            <div className="m-stripe h-10 w-3" />
+            <div>
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.24em] text-[var(--muted)]">Version 02</p>
+              <p className="text-sm font-bold uppercase tracking-[0.18em] text-white">TG Analytics</p>
+            </div>
+          </div>
+          <p className="hidden text-sm font-bold uppercase tracking-[0.15em] text-[var(--body)] sm:block">
+            Apify / OpenRouter
+          </p>
+        </nav>
+
+        <header className="grid w-full grid-cols-1 gap-8 border-b border-[var(--hairline)] pb-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.5fr)] lg:items-stretch">
+          <div className="w-full min-w-0">
+            <p className="mb-4 break-words font-mono text-xs font-bold uppercase tracking-[0.16em] text-[var(--body)] sm:text-sm sm:tracking-[0.24em]">
+              Telegram channel intelligence
             </p>
-            <h1 className="max-w-4xl text-4xl font-semibold leading-none tracking-tight text-zinc-950 md:text-6xl">
+            <h1 className="max-w-full break-words text-4xl font-bold uppercase leading-none tracking-normal text-white sm:max-w-4xl sm:text-5xl md:text-7xl">
               TG Analytics from ionko
             </h1>
-            <p className="mt-5 max-w-[66ch] text-base leading-7 text-zinc-600">
-              Локальный сервис для быстрой оценки публичного Telegram-канала: последние посты, просмотры, частота публикаций и краткое резюме на русском.
+            <p className="mt-6 w-full max-w-[31ch] break-words text-base font-light leading-7 text-[var(--body-strong)] sm:max-w-[66ch] sm:text-lg sm:leading-8">
+              Техническая панель для быстрой оценки публичного Telegram-канала: период, просмотры, частота публикаций и краткое резюме на русском.
             </p>
+            <div className="mt-8 grid w-full max-w-full border border-[var(--hairline)] md:max-w-3xl md:grid-cols-3">
+              {["30 дней", "fallback 10", "DeepSeek"].map((item) => (
+                <div key={item} className="border-b border-[var(--hairline)] p-4 md:border-b-0 md:border-r md:last:border-r-0">
+                  <p className="font-mono text-sm font-bold uppercase tracking-[0.1em] text-white sm:tracking-[0.15em]">{item}</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.12em] text-[var(--muted)]">режим анализа</p>
+                </div>
+              ))}
+            </div>
           </div>
 
           <form
             onSubmit={handleSubmit}
-            className="min-w-0 rounded-[2rem] border border-zinc-200/80 bg-white/82 p-5 shadow-[0_24px_80px_-48px_rgba(20,40,32,0.48)]"
+            className="carbon-field relative min-w-0 overflow-hidden border border-[var(--hairline)] p-6"
           >
-            <label htmlFor="channel" className="block text-sm font-semibold text-zinc-900">
+            <div className="track-line" />
+            <label htmlFor="channel" className="relative block text-sm font-bold uppercase tracking-[0.15em] text-white">
               Telegram-канал
             </label>
-            <p className="mt-1 text-sm text-zinc-500">URL, @username или username.</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <p className="relative mt-2 text-sm font-light text-[var(--body)]">URL, @username или username.</p>
+            <div className="relative mt-5 grid gap-3">
               <input
                 id="channel"
                 value={channel}
                 onChange={(event) => setChannel(event.target.value)}
                 placeholder="t.me/let_me_be_your_psy"
-                className="min-h-12 w-full min-w-0 rounded-2xl border border-zinc-200 bg-white px-4 text-base text-zinc-950 outline-none transition placeholder:text-zinc-400 focus:border-[var(--accent)] focus:ring-4 focus:ring-emerald-900/10"
+                className="min-h-12 w-full min-w-0 border border-[var(--hairline)] bg-black px-4 text-base font-light text-white outline-none transition placeholder:text-[var(--muted)] focus:border-white"
               />
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent)] px-5 font-semibold text-white transition hover:bg-[var(--accent-dark)] active:translate-y-[1px] disabled:cursor-not-allowed disabled:bg-zinc-300 sm:w-auto"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 border border-white bg-transparent px-5 text-sm font-bold uppercase tracking-[0.1em] text-white transition hover:bg-white hover:text-black active:translate-y-[1px] disabled:cursor-not-allowed disabled:border-[var(--hairline)] disabled:text-[var(--muted)] sm:tracking-[0.15em]"
               >
                 {isLoading ? (
                   <ArrowClockwise className="h-5 w-5 animate-spin" weight="bold" />
