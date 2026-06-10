@@ -6,10 +6,16 @@ import {
   CheckCircle,
   Eye,
   Lightning,
+  LockKey,
   PaperPlaneTilt,
+  Sparkle,
   WarningCircle,
 } from "@phosphor-icons/react";
-import { FormEvent, useMemo, useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { AuthPanel, type AccountSnapshot, type AuthMode } from "./auth-panel";
+import { createClient as createSupabaseClient } from "@/lib/supabase/client";
+import { hasSupabaseEnv } from "@/lib/supabase/env";
 
 type ApiPost = {
   id: string;
@@ -44,6 +50,12 @@ type ApiResult = {
   recentPosts: ApiPost[];
   analysis: string;
   limitations: string[];
+  billing: {
+    charged: boolean;
+    alreadyUnlocked: boolean;
+    creditsRemaining: number;
+    creditsTotal: number;
+  };
 };
 
 type ApiError = {
@@ -69,6 +81,40 @@ const previewText = (text: string) => {
   if (!text.trim()) return "Пост без текстового описания";
   return text.length > 190 ? `${text.slice(0, 190).trim()}...` : text;
 };
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function readAccountSnapshot(
+  supabase: ReturnType<typeof createSupabaseClient>,
+  user: User,
+): Promise<AccountSnapshot | null> {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const { data, error } = await supabase
+      .from("user_accounts")
+      .select("id, email, credits_remaining, credits_total")
+      .eq("id", user.id)
+      .single();
+
+    if (data) {
+      return {
+        id: data.id,
+        email: data.email || user.email || "",
+        creditsRemaining: data.credits_remaining,
+        creditsTotal: data.credits_total,
+      };
+    }
+
+    if (!error || error.code !== "PGRST116") {
+      break;
+    }
+
+    await wait(250 * (attempt + 1));
+  }
+
+  return null;
+}
 
 function LoadingState() {
   return (
@@ -107,8 +153,8 @@ function EmptyState() {
           <h2 className="break-words text-lg font-light uppercase tracking-[0.12em] text-white sm:text-xl">
             Введите публичный Telegram-канал
           </h2>
-          <div className="mt-3 max-w-[58ch] text-sm font-light leading-6 text-[var(--body)] sm:text-base sm:leading-7">
-            <p>Вы получите анализ последних 30 дней этого канала:</p>
+          <div className="mt-3 max-w-[60ch] text-sm font-light leading-6 text-[var(--body)] sm:text-base sm:leading-7">
+            <p>Сервис анализирует последние 30 дней канала и показывает:</p>
             <ul className="mt-3 space-y-1">
               {["темы", "активность", "просмотры", "краткое резюме"].map((item, index) => (
                 <li key={item} className="flex items-center gap-3 leading-6">
@@ -117,6 +163,9 @@ function EmptyState() {
                 </li>
               ))}
             </ul>
+            <p className="mt-4 text-sm text-[var(--muted)]">
+              После входа ты получаешь 7 кредитов на уникальные каналы. Повторный анализ того же канала бесплатный.
+            </p>
           </div>
         </div>
       </div>
@@ -156,6 +205,23 @@ function ResultView({ result }: { result: ApiResult }) {
 
   return (
     <div className="space-y-6">
+      <section className="billing-panel flex flex-col gap-3 border border-white/12 p-5 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Кредиты</p>
+          <p className="mt-2 text-sm font-light leading-6 text-[var(--body-strong)]">
+            {result.billing.charged
+              ? "Новый канал зафиксирован. За этот анализ списан 1 кредит."
+              : "Этот канал уже был открыт ранее. Кредит за повторный анализ не списан."}
+          </p>
+        </div>
+        <div className="credit-badge">
+          <span className="credit-badge__label">Осталось</span>
+          <span className="credit-badge__value">
+            {result.billing.creditsRemaining} / {result.billing.creditsTotal}
+          </span>
+        </div>
+      </section>
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metricCards.map((metric) => {
           const Icon = metric.icon;
@@ -250,16 +316,177 @@ function ResultView({ result }: { result: ApiResult }) {
 }
 
 export function Analyzer() {
+  const [supabase] = useState(() => (hasSupabaseEnv ? createSupabaseClient() : null));
   const [channel, setChannel] = useState("");
   const [result, setResult] = useState<ApiResult | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>("sign-up");
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authHint, setAuthHint] = useState<string | null>(
+    "Регистрация встроена в экран. После входа ты сразу получаешь 7 кредитов.",
+  );
+  const [account, setAccount] = useState<AccountSnapshot | null>(null);
+  const authPanelRef = useRef<HTMLDivElement | null>(null);
 
   const canSubmit = useMemo(() => channel.trim().length > 0 && !isLoading, [channel, isLoading]);
+
+  useEffect(() => {
+    if (!supabase) {
+      setAuthHint("Чтобы включить регистрацию локально, добавь NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY в .env.local.");
+      return;
+    }
+
+    let isMounted = true;
+
+    const syncUser = async (user: User | null) => {
+      if (!isMounted) return;
+
+      if (!user) {
+        setAccount(null);
+        return;
+      }
+
+      const snapshot = await readAccountSnapshot(supabase, user);
+      if (!isMounted) return;
+
+      if (snapshot) {
+        setAccount(snapshot);
+        setAuthError(null);
+        setAuthHint("Повторный анализ уже открытого канала остается бесплатным.");
+      } else {
+        setAuthError("Аккаунт создан, но профиль еще не успел инициализироваться. Обнови страницу через пару секунд.");
+      }
+    };
+
+    void (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      await syncUser(user);
+    })();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      void syncUser(session?.user ?? null);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  async function handleAuthSubmit() {
+    if (!supabase) {
+      setAuthError("Supabase еще не подключен в .env.local. Нужны публичный URL и publishable key.");
+      return;
+    }
+
+    if (authLoading) return;
+
+    const email = authEmail.trim();
+    const password = authPassword;
+
+    if (!email || !password) {
+      setAuthError("Нужны и email, и пароль.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setAuthError("Пароль должен быть не короче 6 символов.");
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError(null);
+    setAuthHint(null);
+
+    try {
+      if (authMode === "sign-up") {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (signUpError) {
+          throw signUpError;
+        }
+
+        if (!data.session) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (signInError) {
+            throw new Error(
+              "Регистрация прошла, но автоматический вход не удался. Возможно, в Supabase все еще включено подтверждение email.",
+            );
+          }
+        }
+
+        setAuthHint("Аккаунт готов. Вход выполнен автоматически.");
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInError) {
+          throw signInError;
+        }
+
+        setAuthHint("Сессия восстановлена. Можно запускать анализ.");
+      }
+
+      setAuthPassword("");
+    } catch (requestError) {
+      setAuthError(requestError instanceof Error ? requestError.message : "Не удалось выполнить вход.");
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  async function handleSignOut() {
+    if (!supabase) return;
+
+    setAuthLoading(true);
+    setAuthError(null);
+
+    const { error: signOutError } = await supabase.auth.signOut();
+
+    if (signOutError) {
+      setAuthError(signOutError.message);
+      setAuthLoading(false);
+      return;
+    }
+
+    setAccount(null);
+    setResult(null);
+    setError(null);
+    setAuthHint("Сессия закрыта. Для нового анализа нужно снова войти.");
+    setAuthLoading(false);
+  }
+
+  function nudgeAuthBlock(message: string) {
+    setAuthError(null);
+    setAuthHint(message);
+    authPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!canSubmit) return;
+
+    if (!account) {
+      nudgeAuthBlock("Чтобы запустить анализ, войди или зарегистрируйся в блоке выше.");
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -274,11 +501,40 @@ export function Analyzer() {
       const payload = (await response.json()) as ApiResult | ApiError;
 
       if (!response.ok) {
-        setError(payload as ApiError);
+        const apiError = payload as ApiError;
+
+        if (response.status === 401) {
+          setAccount(null);
+          nudgeAuthBlock(apiError.error);
+          return;
+        }
+
+        if (response.status === 402) {
+          setAccount((current) =>
+            current
+              ? {
+                  ...current,
+                  creditsRemaining: 0,
+                }
+              : current,
+          );
+        }
+
+        setError(apiError);
         return;
       }
 
-      setResult(payload as ApiResult);
+      const nextResult = payload as ApiResult;
+      setResult(nextResult);
+      setAccount((current) =>
+        current
+          ? {
+              ...current,
+              creditsRemaining: nextResult.billing.creditsRemaining,
+              creditsTotal: nextResult.billing.creditsTotal,
+            }
+          : current,
+      );
     } catch (requestError) {
       setError({
         error: "Локальный запрос не дошел до API route.",
@@ -312,15 +568,57 @@ export function Analyzer() {
             </h1>
           </div>
 
+          <div ref={authPanelRef}>
+            <AuthPanel
+              authMode={authMode}
+              authEmail={authEmail}
+              authPassword={authPassword}
+              authLoading={authLoading}
+              authError={authError}
+              authHint={authHint}
+              account={account}
+              onModeChange={setAuthMode}
+              onEmailChange={setAuthEmail}
+              onPasswordChange={setAuthPassword}
+              onSubmit={() => {
+                void handleAuthSubmit();
+              }}
+              onSignOut={() => {
+                void handleSignOut();
+              }}
+            />
+          </div>
+
           <EmptyState />
 
           <form
             onSubmit={handleSubmit}
             className="carbon-field animated-border relative w-full min-w-0 max-w-2xl overflow-hidden border border-white/70 p-6"
           >
-            <label htmlFor="channel" className="relative block text-sm font-bold uppercase tracking-[0.15em] text-white">
-              Telegram-канал
-            </label>
+            <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <label htmlFor="channel" className="relative block text-sm font-bold uppercase tracking-[0.15em] text-white">
+                  Telegram-канал
+                </label>
+                <p className="mt-2 text-sm font-light leading-6 text-[var(--body)]">
+                  Анализ последних 30 дней. Повтор канала кредит не списывает.
+                </p>
+              </div>
+              {account ? (
+                <div className="credit-badge credit-badge--compact">
+                  <span className="credit-badge__label">Баланс</span>
+                  <span className="credit-badge__value">
+                    {account.creditsRemaining} / {account.creditsTotal}
+                  </span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 border border-white/12 px-3 py-2 text-xs uppercase tracking-[0.15em] text-[var(--muted)]">
+                  <LockKey className="h-4 w-4" weight="bold" />
+                  Нужен вход
+                </div>
+              )}
+            </div>
+
             <div className="relative mt-5 grid gap-3">
               <div className="input-shell">
                 <input
@@ -344,8 +642,14 @@ export function Analyzer() {
                 Анализ
               </button>
             </div>
-          </form>
 
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm font-light text-[var(--body)]">
+              <span className="inline-flex items-center gap-2">
+                <Sparkle className="h-4 w-4 text-white" weight="fill" />
+                Новый канал списывает кредит только после успешного анализа.
+              </span>
+            </div>
+          </form>
         </header>
 
         <div className="mt-8">

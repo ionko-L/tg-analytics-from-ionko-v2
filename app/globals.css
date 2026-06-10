@@ -20,6 +20,7 @@
   --m-blue-dark: #1c69d4;
   --m-red: #e22718;
   --danger: #e22718;
+  --danger-soft: #ff9c94;
 }
 
 * {
@@ -162,6 +163,107 @@ span {
     rgba(8, 9, 12, 0.48);
 }
 
+.account-panel {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.042), rgba(255, 255, 255, 0.014)),
+    rgba(6, 8, 12, 0.62);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 60px rgba(0, 0, 0, 0.18);
+}
+
+.account-panel::after,
+.billing-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.55;
+}
+
+.auth-segment {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+  padding: 0 0.95rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--body);
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.auth-segment--active {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(115deg, rgba(0, 102, 177, 0.28), rgba(226, 39, 24, 0.12));
+  color: white;
+}
+
+.status-pill,
+.credit-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.7rem 0.95rem;
+}
+
+.status-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: white;
+}
+
+.credit-badge {
+  min-width: 132px;
+  justify-content: space-between;
+}
+
+.credit-badge--compact {
+  min-width: 116px;
+  padding: 0.55rem 0.8rem;
+}
+
+.credit-badge__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.credit-badge__value {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+}
+
+.billing-panel {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 84% 25%, rgba(226, 39, 24, 0.1), transparent 16rem),
+    radial-gradient(circle at 16% 30%, rgba(0, 102, 177, 0.12), transparent 15rem),
+    rgba(10, 10, 12, 0.76);
+}
+
 @keyframes borderGlow {
   0% {
     box-shadow:
@@ -268,6 +370,11 @@ span {
 .input-shell input {
   animation: borderGlow 5.8s ease-in-out infinite;
   padding-left: 44px;
+}
+
+.input-shell input[type="email"],
+.input-shell input[type="password"] {
+  padding-left: 1rem;
 }
 
 @keyframes mButtonFlow {

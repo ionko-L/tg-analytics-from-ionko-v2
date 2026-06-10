@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,6 +23,14 @@ type ChannelSummary = {
   title: string | null;
   description: string | null;
   subscribers: number | null;
+};
+
+type AccountContext = {
+  userId: string;
+  email: string;
+  creditsRemaining: number;
+  creditsTotal: number;
+  alreadyUnlocked: boolean;
 };
 
 const LOOKBACK_DAYS = 30;
@@ -57,7 +67,7 @@ function normalizeTelegramInput(rawInput: unknown) {
 
   const withoutDomain = withoutProtocol.replace(/^t\.me\//i, "");
   const withoutAt = withoutDomain.replace(/^@/, "");
-  const handle = withoutAt.split(/[/?#]/)[0]?.trim();
+  const handle = withoutAt.split(/[/?#]/)[0]?.trim().toLowerCase();
 
   if (!handle || !/^[a-zA-Z0-9_]{4,64}$/.test(handle)) {
     throw new Error("Неверный формат канала. Используйте t.me/channel, @channel или channel.");
@@ -67,6 +77,105 @@ function normalizeTelegramInput(rawInput: unknown) {
     input: value,
     handle,
     url: `https://t.me/${handle}`,
+  };
+}
+
+async function getAccountContext(channelHandle: string) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError || !user) {
+    throw new Error("AUTH_REQUIRED");
+  }
+
+  const [{ data: accountRow, error: accountError }, { data: unlockedRows, error: unlockedError }] =
+    await Promise.all([
+      supabase
+        .from("user_accounts")
+        .select("id, email, credits_remaining, credits_total")
+        .eq("id", user.id)
+        .single(),
+      supabase
+        .from("analyzed_channels")
+        .select("channel_handle")
+        .eq("user_id", user.id)
+        .eq("channel_handle", channelHandle)
+        .limit(1),
+    ]);
+
+  if (accountError || !accountRow) {
+    throw new Error("ACCOUNT_NOT_READY");
+  }
+
+  if (unlockedError) {
+    throw new Error("ACCOUNT_HISTORY_UNAVAILABLE");
+  }
+
+  return {
+    supabase,
+    account: {
+      userId: accountRow.id,
+      email: accountRow.email,
+      creditsRemaining: accountRow.credits_remaining,
+      creditsTotal: accountRow.credits_total,
+      alreadyUnlocked: unlockedRows.length > 0,
+    } satisfies AccountContext,
+  };
+}
+
+async function registerSuccessfulAnalysis(input: {
+  supabase: SupabaseClient;
+  account: AccountContext;
+  channelHandle: string;
+  channelUrl: string;
+}) {
+  if (input.account.alreadyUnlocked) {
+    return {
+      charged: false,
+      creditsRemaining: input.account.creditsRemaining,
+      creditsTotal: input.account.creditsTotal,
+    };
+  }
+
+  const { error: insertError } = await input.supabase.from("analyzed_channels").insert({
+    user_id: input.account.userId,
+    channel_handle: input.channelHandle,
+    channel_url: input.channelUrl,
+  });
+
+  if (insertError) {
+    if (insertError.code === "23505") {
+      return {
+        charged: false,
+        creditsRemaining: input.account.creditsRemaining,
+        creditsTotal: input.account.creditsTotal,
+      };
+    }
+
+    if (insertError.message.includes("NO_CREDITS_AVAILABLE")) {
+      throw new Error("NO_CREDITS_AVAILABLE");
+    }
+
+    throw new Error(`Не удалось зафиксировать использование кредита: ${insertError.message}`);
+  }
+
+  const { data: updatedAccount, error: updatedAccountError } = await input.supabase
+    .from("user_accounts")
+    .select("credits_remaining, credits_total")
+    .eq("id", input.account.userId)
+    .single();
+
+  if (updatedAccountError || !updatedAccount) {
+    throw new Error("ACCOUNT_REFRESH_FAILED");
+  }
+
+  return {
+    charged: true,
+    creditsRemaining: updatedAccount.credits_remaining,
+    creditsTotal: updatedAccount.credits_total,
   };
 }
 
@@ -353,6 +462,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => null)) as AnyRecord | null;
     const channel = normalizeTelegramInput(body?.channel);
+    const { supabase, account } = await getAccountContext(channel.handle);
+
+    if (!account.alreadyUnlocked && account.creditsRemaining <= 0) {
+      return jsonError(
+        402,
+        "Бесплатные кредиты закончились.",
+        "Повторный анализ уже открытого канала по-прежнему доступен без списания.",
+      );
+    }
+
     const items = await fetchApifyItems(channel);
     const channelSummary = extractChannel(items, channel);
     const allPosts = extractPosts(items, channel.url);
@@ -386,6 +505,12 @@ export async function POST(request: NextRequest) {
         topPosts,
       }),
     );
+    const billing = await registerSuccessfulAnalysis({
+      supabase,
+      account,
+      channelHandle: channel.handle,
+      channelUrl: channel.url,
+    });
 
     return NextResponse.json({
       channel: channelSummary,
@@ -395,16 +520,39 @@ export async function POST(request: NextRequest) {
       recentPosts,
       analysis,
       limitations,
+      billing: {
+        ...billing,
+        alreadyUnlocked: account.alreadyUnlocked,
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Неизвестная ошибка.";
     const isEnvError = message.startsWith("Missing required environment variable");
     const isInputError = message.includes("Введите") || message.includes("Неверный формат");
+    const isAuthError = message === "AUTH_REQUIRED";
+    const isCreditsError = message === "NO_CREDITS_AVAILABLE";
+    const isAccountError = [
+      "ACCOUNT_NOT_READY",
+      "ACCOUNT_HISTORY_UNAVAILABLE",
+      "ACCOUNT_REFRESH_FAILED",
+    ].includes(message);
 
     return jsonError(
-      isInputError ? 400 : isEnvError ? 500 : 502,
-      isEnvError ? "Не настроены переменные окружения." : message,
-      isEnvError ? "Проверьте .env.local и перезапустите dev server." : undefined,
+      isInputError ? 400 : isAuthError ? 401 : isCreditsError ? 402 : isEnvError ? 500 : isAccountError ? 503 : 502,
+      isEnvError
+        ? "Не настроены переменные окружения."
+        : isAuthError
+          ? "Чтобы запустить анализ, войдите или зарегистрируйтесь."
+          : isCreditsError
+            ? "Бесплатные кредиты закончились."
+            : isAccountError
+              ? "Не удалось прочитать состояние аккаунта."
+              : message,
+      isEnvError
+        ? "Проверьте .env.local и перезапустите dev server."
+        : isCreditsError
+          ? "Повторный анализ уже открытого канала остается доступным без списания."
+          : undefined,
     );
   }
 }
