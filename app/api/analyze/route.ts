@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabasePublishableKey, getSupabaseUrl } from "@/lib/supabase/public-config";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 function missingSupabaseEnv() {
-  return !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  return !getSupabaseUrl() || !getSupabasePublishableKey();
 }
 
 export async function POST(request: NextRequest) {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Не настроены переменные Supabase.",
-        details: "Проверьте NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.",
+        details: "Проверьте публичную конфигурацию Supabase.",
       },
       { status: 500 },
     );
@@ -34,11 +35,11 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null);
   const origin = request.headers.get("origin") ?? "http://localhost:3000";
-  const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/analyze-channel`, {
+  const response = await fetch(`${getSupabaseUrl()}/functions/v1/analyze-channel`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${sessionResult.session.access_token}`,
-      apikey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      apikey: getSupabasePublishableKey(),
       "Content-Type": "application/json",
       "x-site-origin": origin,
     },
