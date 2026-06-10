@@ -2,6 +2,12 @@
 
 Local Next.js service for analyzing public Telegram channels with Apify and OpenRouter.
 
+## Version Boundary
+
+This repository/deployment is V2: it runs without registration, accounts, credits, Supabase auth, or Supabase Edge Functions.
+
+V3 is a separate deployment/repository line with registration and credit-based access. Do not deploy V3 auth files into V2.
+
 ## Local Setup
 
 ```bash
